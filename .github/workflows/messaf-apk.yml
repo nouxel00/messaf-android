@@ -1,0 +1,60 @@
+# Compile l'application MESSAF (variante fdroid, sans services Google)
+# sur les serveurs de GitHub et publie l'APK dans l'onglet Actions.
+name: APK MESSAF
+
+on:
+  push:
+    branches: [ messaf ]
+  pull_request:
+    branches: [ messaf ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-messaf-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
+
+jobs:
+  apk:
+    name: Compiler l'APK de test
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Libérer de l'espace disque
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Java 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Compiler la variante fdroidDebug
+        run: ./gradlew :app:assembleFdroidDebug --stacktrace --no-configuration-cache
+
+      - name: Publier l'APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: messaf-apk-test
+          path: app/build/outputs/apk/fdroid/debug/*-universal-debug.apk
+          retention-days: 14
