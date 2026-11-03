@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MESSAF : textes des salons de fonction (en français, langue de l'application MESSAF). -->
+<resources>
+    <string name="messaf_salon_fonction">Salon de fonction : %1$s</string>
+    <string name="messaf_interim">Intérim : %1$s assure la fonction de %2$s.</string>
+    <string name="messaf_interim_jusqu_au">Intérim : %1$s assure la fonction de %2$s jusqu\'au %3$s.</string>
+    <string name="messaf_qualite_interim">%1$s (intérim)</string>
+    <string name="messaf_classification_diffusion_restreinte">Diffusion restreinte · captures d\'écran bloquées, transfert et copie désactivés</string>
+    <string name="messaf_classification_confidentiel">Confidentiel · captures d\'écran bloquées, transfert et copie désactivés</string>
+</resources>

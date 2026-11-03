@@ -12,8 +12,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 object LockScreenConfig {
-    /** Whether the PIN is mandatory or not. */
-    const val IS_PIN_MANDATORY: Boolean = false
+    /** Whether the PIN is mandatory or not. MESSAF : code PIN obligatoire (note de pré-projet, 6.7). */
+    const val IS_PIN_MANDATORY: Boolean = true
 
     /** Set of forbidden PIN codes. */
     val FORBIDDEN_PIN_CODES: Set<String> = setOf("0000", "1234")

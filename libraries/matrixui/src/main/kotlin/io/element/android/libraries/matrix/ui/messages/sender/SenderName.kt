@@ -36,6 +36,8 @@ fun SenderName(
     senderProfile: ProfileDetails,
     senderNameMode: SenderNameMode,
     modifier: Modifier = Modifier,
+    // MESSAF : « en qualité de », la fonction de l'auteur dans un salon de fonction
+    suffix: String? = null,
 ) {
     Row(
         modifier = modifier,
@@ -47,6 +49,9 @@ fun SenderName(
             ProfileDetails.Pending,
             ProfileDetails.Unavailable -> {
                 MainText(text = senderId.value, mode = senderNameMode)
+                if (suffix != null) {
+                    SuffixText(text = suffix, mode = senderNameMode)
+                }
             }
             is ProfileDetails.Ready -> {
                 val displayName = senderProfile.displayName
@@ -57,6 +62,9 @@ fun SenderName(
                     if (senderProfile.displayNameAmbiguous) {
                         SecondaryText(text = senderId.value, mode = senderNameMode)
                     }
+                }
+                if (suffix != null) {
+                    SuffixText(text = suffix, mode = senderNameMode)
                 }
                 val userStatus = senderProfile.displayedStatus
                 if (senderNameMode is SenderNameMode.Timeline && userStatus != null) {
@@ -104,6 +112,34 @@ private fun RowScope.MainText(
         text = text,
         style = style,
         color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/** MESSAF : la fonction de l'auteur, en texte secondaire, réduite si la place manque. */
+@Composable
+private fun RowScope.SuffixText(
+    text: String,
+    mode: SenderNameMode,
+) {
+    val style = when (mode) {
+        is SenderNameMode.Timeline -> ElementTheme.typography.fontBodySmRegular
+        SenderNameMode.ActionList,
+        SenderNameMode.Reply -> ElementTheme.typography.fontBodyXsRegular
+    }
+    val modifier = when (mode) {
+        is SenderNameMode.Timeline -> Modifier.alignByBaseline()
+        SenderNameMode.ActionList,
+        SenderNameMode.Reply -> Modifier
+    }
+    Text(
+        modifier = modifier
+            .clipToBounds()
+            .weight(1f, fill = false),
+        text = text,
+        style = style,
+        color = ElementTheme.colors.textSecondary,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
