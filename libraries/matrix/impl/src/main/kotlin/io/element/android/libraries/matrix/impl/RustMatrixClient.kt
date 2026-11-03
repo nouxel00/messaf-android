@@ -143,6 +143,9 @@ import org.matrix.rustcomponents.sdk.UserProfile
 import org.matrix.rustcomponents.sdk.use
 import timber.log.Timber
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.encoding.Base64
@@ -398,6 +401,29 @@ class RustMatrixClient(
             .getOrNull()
             ?: sessionId.value.substringAfter(":")
     }
+
+    override suspend fun getRoomStateEventContent(roomId: RoomId, eventType: String, stateKey: String): Result<String?> =
+        withContext(sessionDispatcher) {
+            runCatchingExceptions {
+                // Jeton et adresse de la session en cours (le SDK les renouvelle)
+                val session = innerClient.session()
+                val segments = listOf(roomId.value, eventType, stateKey).map { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
+                val url = URL("${session.homeserverUrl.trimEnd('/')}/_matrix/client/v3/rooms/${segments[0]}/state/${segments[1]}/${segments[2]}")
+                val connection = url.openConnection() as HttpURLConnection
+                try {
+                    connection.connectTimeout = 10_000
+                    connection.readTimeout = 10_000
+                    connection.setRequestProperty("Authorization", "Bearer ${session.accessToken}")
+                    when (connection.responseCode) {
+                        HttpURLConnection.HTTP_OK -> connection.inputStream.bufferedReader().use { it.readText() }
+                        HttpURLConnection.HTTP_NOT_FOUND -> null
+                        else -> error("Lecture de l'état $eventType : HTTP ${connection.responseCode}")
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            }
+        }
 
     override suspend fun getUrl(url: String): Result<ByteArray> = withContext(sessionDispatcher) {
         runCatchingExceptions {

@@ -34,6 +34,7 @@ import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.link.LinkState
+import io.element.android.features.messages.impl.messaf.SalonFonctionAffichage
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
@@ -76,6 +77,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.emoji.api.recentemojis.AddRecentEmoji
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.toThreadId
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
@@ -84,6 +86,7 @@ import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomInfo
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
+import io.element.android.libraries.matrix.api.room.messaf.SalonFonction
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.SendTarget
@@ -98,8 +101,11 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -110,6 +116,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MessagesPresenter(
     @Assisted private val navigator: MessagesNavigator,
     private val room: JoinedRoom,
+    private val matrixClient: MatrixClient,
     @Assisted private val composerPresenter: Presenter<MessageComposerState>,
     voiceMessageComposerPresenterFactory: DefaultVoiceMessageComposerPresenter.Factory,
     @Assisted private val timelinePresenter: Presenter<TimelineState>,
@@ -179,6 +186,24 @@ class MessagesPresenter(
             room.threadsListService.subscribeToItemUpdates()
                 .onStart { room.threadsListService.paginate() }
                 .collectLatest { value = it.toImmutableList() }
+        }
+
+        // MESSAF : état « bf.messaf.salon » tenu par le bot de fonction (fonctions et intérims du salon).
+        // Relu quand les membres changent : passation et intérim invitent ou retirent un agent.
+        val salonFonction by produceState<SalonFonctionAffichage?>(initialValue = null) {
+            room.roomInfoFlow
+                .map { it.joinedMembersCount to it.invitedMembersCount }
+                .distinctUntilChanged()
+                .collectLatest {
+                    val salon = matrixClient.getRoomStateEventContent(room.roomId, SalonFonction.TYPE).getOrNull()
+                        ?.let { json -> SalonFonction.parse(json) }
+                    value = salon?.let { s ->
+                        val noms = s.interims.associate { (_, interim) ->
+                            interim.userId to (room.getUpdatedMember(interim.userId).getOrNull()?.displayName ?: interim.userId.extractedDisplayName)
+                        }
+                        SalonFonctionAffichage(salon = s, noms = noms.toImmutableMap())
+                    }
+                }
         }
 
         val canOpenThreadList by featureFlagService.isFeatureEnabledFlow(FeatureFlags.Threads).collectAsState(initial = false)
@@ -362,6 +387,7 @@ class MessagesPresenter(
             ),
             showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom && timelineState.timelineMode !is Timeline.Mode.Thread,
             redactEventAction = redactEventAction.value,
+            salonFonction = salonFonction,
             eventSink = ::handleEvent,
         )
     }

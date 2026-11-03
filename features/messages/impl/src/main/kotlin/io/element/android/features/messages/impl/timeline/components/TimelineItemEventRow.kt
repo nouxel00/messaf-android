@@ -70,6 +70,7 @@ import androidx.constraintlayout.compose.ConstrainScope
 import androidx.constraintlayout.compose.ConstraintLayout
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.features.messages.impl.messaf.qualiteExpediteur
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineRoomInfo
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
@@ -733,6 +734,7 @@ private fun MessageSenderInformation(
             senderId = senderId,
             senderProfile = senderProfile,
             senderNameMode = SenderNameMode.Timeline(avatarColors.foreground),
+            suffix = qualiteExpediteur(senderId),
         )
     }
 }

@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,6 +70,8 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeStateView
 import io.element.android.features.messages.impl.link.LinkEvent
 import io.element.android.features.messages.impl.link.LinkView
+import io.element.android.features.messages.impl.messaf.BandeauSalonFonction
+import io.element.android.features.messages.impl.messaf.LocalSalonFonction
 import io.element.android.features.messages.impl.messagecomposer.AttachmentsBottomSheet
 import io.element.android.features.messages.impl.messagecomposer.DisabledComposerView
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
@@ -125,6 +128,7 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.utils.HideKeyboardWhenDisposed
 import io.element.android.libraries.designsystem.utils.KeepScreenOn
 import io.element.android.libraries.designsystem.utils.OnLifecycleEvent
+import io.element.android.libraries.designsystem.utils.ProtegerEcran
 import io.element.android.libraries.designsystem.utils.scaffoldScrollableContentInsets
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarHost
 import io.element.android.libraries.designsystem.utils.snackbar.rememberSnackbarHostState
@@ -166,6 +170,9 @@ fun MessagesView(
     customReactionBottomSheet: @Composable () -> Unit,
 ) {
     val eventContentValidationState = LocalEventContentValidationState.current
+
+    // MESSAF : salon classé, captures et enregistrements d'écran bloqués
+    ProtegerEcran(actif = state.salonFonction?.salon?.estClassifie == true)
 
     OnLifecycleEvent { _, event ->
         state.voiceMessageComposerState.eventSink(VoiceMessageComposerEvent.LifecycleEvent(event))
@@ -436,23 +443,25 @@ fun MessagesView(
         )
     }
 
-    ActionListView(
-        state = state.actionListState,
-        onSelectAction = { action: TimelineItemAction, event: TimelineItem.Event ->
-            if (action == TimelineItemAction.EndPoll) {
-                endPollConfirmingEvent = event
-            } else {
-                onActionSelected(action, event)
-            }
-        },
-        onCustomReactionClick = { event ->
-            state.customReactionState.eventSink(CustomReactionEvent.ShowCustomReactionSheet(event))
-        },
-        onEmojiReactionClick = ::onEmojiReactionClick,
-        onVerifiedUserSendFailureClick = { event ->
-            state.timelineState.eventSink(TimelineEvent.ComputeVerifiedUserSendFailure(event))
-        },
-    )
+    CompositionLocalProvider(LocalSalonFonction provides state.salonFonction?.salon) {
+        ActionListView(
+            state = state.actionListState,
+            onSelectAction = { action: TimelineItemAction, event: TimelineItem.Event ->
+                if (action == TimelineItemAction.EndPoll) {
+                    endPollConfirmingEvent = event
+                } else {
+                    onActionSelected(action, event)
+                }
+            },
+            onCustomReactionClick = { event ->
+                state.customReactionState.eventSink(CustomReactionEvent.ShowCustomReactionSheet(event))
+            },
+            onEmojiReactionClick = ::onEmojiReactionClick,
+            onVerifiedUserSendFailureClick = { event ->
+                state.timelineState.eventSink(TimelineEvent.ComputeVerifiedUserSendFailure(event))
+            },
+        )
+    }
 
     customReactionBottomSheet()
 
@@ -604,29 +613,33 @@ private fun MessagesViewContent(
             // date badge offset so the badge sits below whichever banners are currently showing.
             var topBannersHeightDp by remember { mutableStateOf(0.dp) }
 
-            TimelineView(
-                state = state.timelineState,
-                timelineProtectionState = state.timelineProtectionState,
-                onUserDataClick = onUserDataClick,
-                onLinkClick = { link -> onLinkClick(link, false) },
-                onContentClick = onContentClick,
-                onGalleryItemClick = onGalleryItemClick,
-                onMessageLongClick = onMessageLongClick,
-                onSwipeToReply = onSwipeToReply,
-                onReactionClick = onReactionClick,
-                onReactionLongClick = onReactionLongClick,
-                onMoreReactionsClick = onMoreReactionsClick,
-                onReadReceiptClick = onReadReceiptClick,
-                onJoinCallClick = onJoinCallClick,
-                forceJumpToBottomVisibility = forceJumpToBottomVisibility,
-                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
-                floatingDateTopOffset = topBannersHeightDp,
-            )
+            // MESSAF : « en qualité de » à côté du nom des auteurs d'un salon de fonction
+            CompositionLocalProvider(LocalSalonFonction provides state.salonFonction?.salon) {
+                TimelineView(
+                    state = state.timelineState,
+                    timelineProtectionState = state.timelineProtectionState,
+                    onUserDataClick = onUserDataClick,
+                    onLinkClick = { link -> onLinkClick(link, false) },
+                    onContentClick = onContentClick,
+                    onGalleryItemClick = onGalleryItemClick,
+                    onMessageLongClick = onMessageLongClick,
+                    onSwipeToReply = onSwipeToReply,
+                    onReactionClick = onReactionClick,
+                    onReactionLongClick = onReactionLongClick,
+                    onMoreReactionsClick = onMoreReactionsClick,
+                    onReadReceiptClick = onReadReceiptClick,
+                    onJoinCallClick = onJoinCallClick,
+                    forceJumpToBottomVisibility = forceJumpToBottomVisibility,
+                    nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                    floatingDateTopOffset = topBannersHeightDp,
+                )
+            }
 
             if (state.timelineState.timelineMode !is Timeline.Mode.Thread) {
                 Column(
                     modifier = Modifier.onSizeChanged { topBannersHeightDp = with(density) { it.height.toDp() } },
                 ) {
+                    state.salonFonction?.let { BandeauSalonFonction(affichage = it) }
                     AnimatedVisibility(
                         visible = state.pinnedMessagesBannerState is PinnedMessagesBannerState.Visible && scrollBehavior.isVisible,
                         enter = expandVertically(),

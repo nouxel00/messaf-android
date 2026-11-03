@@ -61,6 +61,8 @@ import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUser
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure.ChangedIdentity
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure.None
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure.UnsignedDevice
+import io.element.android.features.messages.impl.messaf.ACTIONS_INTERDITES_SALON_CLASSE
+import io.element.android.features.messages.impl.messaf.LocalSalonFonction
 import io.element.android.features.messages.impl.timeline.a11y.a11yReactionAction
 import io.element.android.features.messages.impl.timeline.components.MessageShieldView
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
@@ -194,7 +196,9 @@ private fun ActionListViewContent(
         }
 
         is ActionListState.Target.Success -> {
-            val actions = target.actions
+            // MESSAF : dans un salon classé, ni transfert, ni copie, ni source du message
+            val salonClasse = LocalSalonFonction.current?.estClassifie == true
+            val actions = if (salonClasse) target.actions.filterNot { it in ACTIONS_INTERDITES_SALON_CLASSE } else target.actions
             LazyColumn(
                 modifier = modifier.fillMaxWidth()
             ) {

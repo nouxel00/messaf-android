@@ -217,6 +217,14 @@ interface MatrixClient : ClientUrlContentFetcher {
     suspend fun getProfile(userId: UserId): Result<MatrixUser>
 
     /**
+     * MESSAF : le contenu JSON d'un événement d'état, lu directement sur le serveur, ou null s'il n'existe pas.
+     *
+     * Sert aux états personnalisés (par exemple `bf.messaf.salon`), que la synchronisation ne transmet pas :
+     * elle ne demande que les types d'état utiles à la liste des salons.
+     */
+    suspend fun getRoomStateEventContent(roomId: RoomId, eventType: String, stateKey: String = ""): Result<String?> = Result.success(null)
+
+    /**
      * Searches the homeserver's user directory.
      *
      * @param searchTerm the text to look for in user ids and display names.
