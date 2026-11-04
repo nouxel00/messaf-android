@@ -107,7 +107,8 @@ android {
     buildTypes {
         val oAuthRedirectSchemeBase = BuildTimeConfig.METADATA_HOST_REVERSED ?: "io.element.android"
         getByName("debug") {
-            resValue("string", "app_name", "$baseAppName dbg")
+            // MESSAF : même nom pour la version de démonstration
+            resValue("string", "app_name", baseAppName)
             resValue(
                 "string",
                 "login_redirect_scheme",
