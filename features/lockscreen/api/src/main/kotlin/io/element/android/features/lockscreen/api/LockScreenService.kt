@@ -9,7 +9,6 @@
 package io.element.android.features.lockscreen.api
 
 import android.os.Build
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.Flow
@@ -40,23 +39,18 @@ interface LockScreenService {
 }
 
 /**
- * Makes sure the secure flag is set on the activity if the pin is setup.
- * @param activity the activity to set the flag on.
+ * Hides the app preview in the recent apps screen if the pin is setup (Android 13 and later).
+ * @param activity the activity to configure.
+ *
+ * MESSAF : avant Android 13, Element X posait FLAG_SECURE sur toute l'application dès qu'un code PIN existait.
+ * Le code PIN étant obligatoire dans MESSAF, toute capture et tout enregistrement d'écran auraient été bloqués,
+ * même dans un salon non classé. Seuls les salons classés bloquent désormais la capture (ProtegerEcran).
  */
 fun LockScreenService.handleSecureFlag(activity: ComponentActivity) {
     isPinSetup()
         .onEach { isPinSetup ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 activity.setRecentsScreenshotEnabled(!isPinSetup)
-            } else {
-                if (isPinSetup) {
-                    activity.window.setFlags(
-                        WindowManager.LayoutParams.FLAG_SECURE,
-                        WindowManager.LayoutParams.FLAG_SECURE
-                    )
-                } else {
-                    activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-                }
             }
         }
         .launchIn(activity.lifecycleScope)
