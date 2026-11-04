@@ -2,6 +2,7 @@
 <!-- MESSAF : textes des salons de fonction (en français, langue de l'application MESSAF). -->
 <resources>
     <string name="messaf_salon_fonction">Salon de fonction : %1$s</string>
+    <string name="messaf_titulaires">Titulaires : %1$s</string>
     <string name="messaf_interim">Intérim : %1$s assure la fonction de %2$s.</string>
     <string name="messaf_interim_jusqu_au">Intérim : %1$s assure la fonction de %2$s jusqu\'au %3$s.</string>
     <string name="messaf_qualite_interim">%1$s (intérim)</string>

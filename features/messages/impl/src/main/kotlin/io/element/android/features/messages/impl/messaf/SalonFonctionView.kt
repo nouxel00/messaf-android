@@ -42,7 +42,7 @@ import kotlinx.collections.immutable.ImmutableMap
  * MESSAF : ce que l'écran d'un salon affiche d'un salon de fonction.
  *
  * @property salon l'état `bf.messaf.salon` du salon, tenu par le bot de fonction.
- * @property noms le nom affiché de chaque intérimaire.
+ * @property noms le nom affiché des titulaires et des intérimaires dont le nom est connu.
  */
 @Immutable
 data class SalonFonctionAffichage(
@@ -76,7 +76,13 @@ fun BandeauSalonFonction(
     affichage: SalonFonctionAffichage,
     modifier: Modifier = Modifier,
 ) {
-    val fonctions = affichage.salon.fonctions.joinToString(" ↔ ") { it.libelle }
+    // « · » plutôt qu'une flèche : toutes les polices des téléphones l'ont
+    val fonctions = affichage.salon.fonctions.joinToString(" · ") { it.libelle }
+    // Titulaires dans l'ordre des fonctions ; « — » pour une fonction dont le titulaire n'a pas encore de nom
+    val titulaires = affichage.salon.fonctions.joinToString(" · ") { f ->
+        f.titulaires.mapNotNull { affichage.noms[it] }.joinToString(", ").ifEmpty { "—" }
+    }
+    val titulairesConnus = affichage.salon.fonctions.any { f -> f.titulaires.any { it in affichage.noms } }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -115,6 +121,15 @@ fun BandeauSalonFonction(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (titulairesConnus) {
+                    Text(
+                        text = stringResource(R.string.messaf_titulaires, titulaires),
+                        style = ElementTheme.typography.fontBodySmRegular,
+                        color = ElementTheme.colors.textPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 affichage.salon.interims.forEach { (fonction, interim) ->
                     val nom = affichage.noms[interim.userId] ?: interim.userId.extractedDisplayName
                     val jusquAu = interim.jusquAu?.let(::dateCourte)
