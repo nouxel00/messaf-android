@@ -198,8 +198,12 @@ class MessagesPresenter(
                     val salon = matrixClient.getRoomStateEventContent(room.roomId, SalonFonction.TYPE).getOrNull()
                         ?.let { json -> SalonFonction.parse(json) }
                     value = salon?.let { s ->
-                        val noms = s.interims.associate { (_, interim) ->
-                            interim.userId to (room.getUpdatedMember(interim.userId).getOrNull()?.displayName ?: interim.userId.extractedDisplayName)
+                        // Noms affichés des titulaires et des intérimaires ; un agent jamais connecté n'en a pas encore
+                        val personnes = (s.fonctions.flatMap { it.titulaires } + s.interims.map { it.second.userId }).distinct()
+                        val noms = buildMap {
+                            personnes.forEach { id ->
+                                room.getUpdatedMember(id).getOrNull()?.displayName?.takeIf { it.isNotBlank() }?.let { put(id, it) }
+                            }
                         }
                         SalonFonctionAffichage(salon = s, noms = noms.toImmutableMap())
                     }
